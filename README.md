@@ -46,9 +46,6 @@ VyperBot/
 │   ├── ldr_serial_test.ino
 │   └── ldr_leaderboard_test.ino
 │
-├── docs/
-│   └── workshop_manual.md
-│
 └── README.md
 ```
 
