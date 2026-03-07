@@ -2,8 +2,8 @@
 #include <WiFiUdp.h>
 
 /* WIFI CONFIG */
-const char* ssid = "SAC-08(2.4GHz)";
-const char* password = "sac@1964";
+const char* ssid = "Deepan";
+const char* password = "23456789";
 
 /*  UDP CONFIG */
 WiFiUDP udp;
@@ -72,6 +72,16 @@ void handleJoystickUDP() {
   if (len <= 0) return;
 
   packetBuffer[len] = '\0';
+
+  if (strcmp(packetBuffer, "ON") == 0) {
+    Serial.println("LASER: ON");
+    return; // Exit function
+  } 
+  else if (strcmp(packetBuffer, "OFF") == 0) {
+    Serial.println("LASER: OFF");
+    return; // Exit function
+  }
+
 
   lastPacketTime = millis();
 
