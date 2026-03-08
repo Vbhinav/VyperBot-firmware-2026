@@ -2,8 +2,8 @@
 #include <WiFiUdp.h>
 
 /* ---------- WIFI CONFIG ---------- */
-const char* ssid = "GalaxyA14";
-const char* password = "Sachin08";
+const char* ssid = "your_wifi_name";
+const char* password = "your_password";
 
 /* ---------- UDP CONFIG ---------- */
 WiFiUDP udp;        // joystick UDP
@@ -66,7 +66,7 @@ void setup() {
   pinMode(ENB, OUTPUT);
   pinMode(IN3, OUTPUT);
   pinMode(IN4, OUTPUT);
-pinMode(LASER_PIN, OUTPUT );
+  pinMode(LASER_PIN, OUTPUT );
   pinMode(stdby, OUTPUT);
   digitalWrite(stdby, HIGH);
 
@@ -107,13 +107,12 @@ pinMode(LASER_PIN, OUTPUT );
                         LOOP
 ========================================================= */
 void loop() {
-handleLDR();
-Serial.println("hanfle ldr completed");
+  handleLDR();
+  Serial.println("handle ldr completed");
   
   handleJoystickUDP();
   
-Serial.println("joy stick completed");
-   // ⭐ MOTOR SAFETY STOP
+  Serial.println("joy stick completed");
  
 
   yield(); // keep WiFi alive
