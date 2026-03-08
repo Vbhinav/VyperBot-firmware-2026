@@ -14,7 +14,7 @@ const char* scoreServerIP = "10.131.222.64";
 const unsigned int scoreServerPort = 9000;
 
 /* ---------- ESP ID ---------- */
-const char* espID = "ESP_1";
+const char* espID = "ESP_1";     //change this to ESP_2 if you are the opposing team
 
 /* ---------- MOTOR PINS ---------- */
 #define ENA 5
