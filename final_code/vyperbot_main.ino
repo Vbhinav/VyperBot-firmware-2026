@@ -2,34 +2,34 @@
 #include <WiFiUdp.h>
 
 /* ---------- WIFI CONFIG ---------- */
-const char* ssid = "your_wifi";
-const char* password = "your_password";
+const char* ssid = "GalaxyA14";
+const char* password = "Sachin08";
 
 /* ---------- UDP CONFIG ---------- */
 WiFiUDP udp;        // joystick UDP
 WiFiUDP scoreUdp;   // score UDP
 
 const unsigned int joystickPort = 1234;
-const char* scoreServerIP = "192.168.1.169";
+const char* scoreServerIP = "10.131.222.64";
 const unsigned int scoreServerPort = 9000;
 
 /* ---------- ESP ID ---------- */
 const char* espID = "ESP_1";
 
 /* ---------- MOTOR PINS ---------- */
-#define ENA 14
-#define IN1 2
-#define IN2 0
-#define LASER_PIN 13
-#define ENB 16
-#define IN3 5
-#define IN4 4
+#define ENA 5
+#define IN1 12
+#define IN2 13
+#define LASER_PIN 16
+#define ENB 4
+#define IN3 0
+#define IN4 2
 
-#define stdby 12
+#define stdby 14
 
 /* ---------- LDR ---------- */
-#define LDR_PIN 1
-#define LDR_THRESHOLD 500
+#define LDR_PIN A0
+#define LDR_THRESHOLD 55
 const unsigned long lockoutDuration = 10000; // 10s
 
 /* ---------- CONTROL STATE ---------- */
@@ -107,11 +107,17 @@ pinMode(LASER_PIN, OUTPUT );
                         LOOP
 ========================================================= */
 void loop() {
-
+handleLDR();
+Serial.println("hanfle ldr completed");
+  
   handleJoystickUDP();
-  handleLDR();
+  
+Serial.println("joy stick completed");
+   // ⭐ MOTOR SAFETY STOP
+ 
 
   yield(); // keep WiFi alive
+  Serial.println("wifi alive completed");
 }
 
 /* =========================================================
@@ -134,26 +140,33 @@ void handleJoystickUDP() {
   int len = udp.read(packetBuffer, sizeof(packetBuffer) - 1);
   if (len <= 0) return;
 
+
+if(lockoutActive)
+return;
+
+
   packetBuffer[len] = '\0';
  
-// Serial.println("--------------------------"); //enable this for debugging raw UDP packets
-//   Serial.print("UDP Received from: ");
-//   Serial.println(udp.remoteIP());
-//   Serial.print("Packet Size: ");
-//   Serial.println(packetSize);
-//   Serial.print("Raw Content: [");
-//   Serial.print(packetBuffer); // This prints the string
-//   Serial.println("]");
+Serial.println("--------------------------");
+  Serial.print("UDP Received from: ");
+  Serial.println(udp.remoteIP());
+  Serial.print("Packet Size: ");
+  Serial.println(packetSize);
+  Serial.print("Raw Content: [");
+  Serial.print(packetBuffer); // This prints the string
+  Serial.println("]");
+
+
 
   if (strcmp(packetBuffer, "ON") == 0) {
     digitalWrite(LASER_PIN, HIGH);
     Serial.println("LASER: ON");
-    return; 
+    return; // Exit function
   } 
   else if (strcmp(packetBuffer, "OFF") == 0) {
     digitalWrite(LASER_PIN, LOW);
     Serial.println("LASER: OFF");
-    return; 
+    return; // Exit function
   }
 
   char* comma = strchr(packetBuffer, ',');
@@ -165,6 +178,7 @@ void handleJoystickUDP() {
   yVal = constrain(atof(comma + 1), -150, 150);
 
   driveDifferential(xVal, yVal);
+
 }
 
 /* =========================================================
@@ -172,15 +186,20 @@ void handleJoystickUDP() {
 ========================================================= */
 void driveDifferential(float x, float y) {
 
-  float turn  = (x ) / 150.0; // joystick gives readings from 0 to 150 for both x and y, we need to normalize this to 0 to 1
+if(lockoutActive)
+{
+  stopMotors();
+  return;
+}
+  float turn  = (x ) / 150.0;
   float speed = ( y) / 150.0;
 
   // deadzone
-  if (abs(turn) < 0.05) turn = 0;  //used to snap reall small values to 0, makes sure bot moves smoothly
+  if (abs(turn) < 0.05) turn = 0;
   if (abs(speed) < 0.05) speed = 0;
 
-  int left  = constrain((speed - turn) * 100, -100, 100);
-  int right = constrain((speed + turn) * 100, -100, 100);
+  int left  = constrain((speed - turn) * 255, -255, 255);
+  int right = constrain((speed + turn) * 255, -255, 255);
 
   Serial.print("L:");
   Serial.print(left);
@@ -205,7 +224,7 @@ void setMotor(int left, int right) {
 }
 
 void stopMotors() {
-
+Serial.print("motor stop");
   analogWrite(ENA, 0);
   analogWrite(ENB, 0);
 }
@@ -214,14 +233,18 @@ void stopMotors() {
                     LDR HANDLER
 ========================================================= */
 void handleLDR() {
-
   unsigned long now = millis();
-
   if (lockoutActive) {
     if (now - lockoutStartTime >= lockoutDuration) {
       lockoutActive = false;
+      Serial.println("lreleaserd");
       wasAboveThreshold = false;
+      
     } else {
+      digitalWrite(LED_BUILTIN, LOW);
+      delay(500);
+      digitalWrite(LED_BUILTIN, HIGH);
+      delay(500);
       return;
     }
   }
@@ -231,12 +254,14 @@ void handleLDR() {
     ldrValue += analogRead(LDR_PIN);
 
   ldrValue /= 5;
-
+Serial.println(ldrValue);
   if (ldrValue >= LDR_THRESHOLD && !wasAboveThreshold) {
     wasAboveThreshold = true;
     lockoutActive = true;
-    lockoutStartTime = now;
     sendScoreUDP();
+    stopMotors();
+    Serial.println("lockout detected");
+    lockoutStartTime = now;
   }
 
   if (ldrValue < LDR_THRESHOLD)
